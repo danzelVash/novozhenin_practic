@@ -23,7 +23,7 @@ func NewGateway(conn grpc.ClientConnInterface) *Gateway {
 
 // Recognize отправляет аудиофрагмент на распознавание и возвращает команду.
 func (g *Gateway) Recognize(ctx context.Context, audio []byte) (string, error) {
-	log.Printf("[neuro] отправка %d байт на распознавание", len(audio))
+	log.Printf("[master/neuro] отправка %d байт на распознавание", len(audio))
 
 	resp, err := g.client.GetAudio(ctx, &pb.GetAudioRequest{
 		Chunk: audio,
@@ -37,6 +37,6 @@ func (g *Gateway) Recognize(ctx context.Context, audio []byte) (string, error) {
 		return "", fmt.Errorf("neuro GetAudio: %w", err)
 	}
 
-	log.Printf("[neuro] распознана команда: %s", resp.GetCommand())
+	log.Printf("[master/neuro] распознана команда: %s", resp.GetCommand())
 	return resp.GetCommand(), nil
 }

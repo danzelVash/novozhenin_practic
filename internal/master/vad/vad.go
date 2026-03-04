@@ -44,7 +44,7 @@ func (v *VAD) Process(reader io.Reader, phrases chan<- []byte) {
 			if rms >= v.threshold {
 				if !isSpeech {
 					isSpeech = true
-					log.Printf("[vad] речь началась (rms=%.4f)", rms)
+					log.Printf("[master/vad] речь началась (rms=%.4f)", rms)
 				}
 				silenceStart = time.Time{}
 				speechBuf = append(speechBuf, buf[:n]...)
@@ -54,7 +54,7 @@ func (v *VAD) Process(reader io.Reader, phrases chan<- []byte) {
 				if silenceStart.IsZero() {
 					silenceStart = time.Now()
 				} else if time.Since(silenceStart) >= v.silenceDur {
-					log.Printf("[vad] речь завершена, %d байт (%.1fс)",
+					log.Printf("[master/vad] речь завершена, %d байт (%.1fс)",
 						len(speechBuf),
 						float64(len(speechBuf))/float64(v.sampleRate*2))
 
@@ -71,7 +71,7 @@ func (v *VAD) Process(reader io.Reader, phrases chan<- []byte) {
 
 		if err != nil {
 			if err != io.EOF && err != io.ErrUnexpectedEOF {
-				log.Printf("[vad] ошибка чтения: %v", err)
+				log.Printf("[master/vad] ошибка чтения: %v", err)
 			}
 			break
 		}

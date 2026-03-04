@@ -93,23 +93,31 @@ func (a *App) runPipeline(ctx context.Context) error {
 		select {
 		case phrase, ok := <-phrases:
 			if !ok {
-				log.Println("[master] VAD канал закрыт")
+				log.Println("[master/pipeline] VAD канал закрыт")
 				return nil
 			}
 
+			log.Printf("[master/pipeline] получена фраза от VAD: %d байт, отправляю в нейросеть", len(phrase))
+
 			command, err := a.neuro.Recognize(ctx, phrase)
 			if err != nil {
-				log.Printf("[master] ошибка распознавания: %v", err)
+				log.Printf("[master/pipeline] ошибка распознавания: %v", err)
 				continue
 			}
 
+			log.Printf("[master/pipeline] нейросеть вернула команду: %q", command)
+
 			switch command {
 			case "вверх":
+				log.Println("[master/pipeline] отправка команды slave: вверх")
 				a.publisher.Publish(transport.Command{DirectionUp: true})
+				log.Println("[master/pipeline] команда отправлена в slave")
 			case "вниз":
+				log.Println("[master/pipeline] отправка команды slave: вниз")
 				a.publisher.Publish(transport.Command{DirectionUp: false})
+				log.Println("[master/pipeline] команда отправлена в slave")
 			default:
-				log.Printf("[master] неизвестная команда: %s", command)
+				log.Printf("[master/pipeline] неизвестная команда: %q, пропускаем", command)
 			}
 
 		case <-ctx.Done():

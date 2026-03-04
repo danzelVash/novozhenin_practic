@@ -67,13 +67,23 @@ func (a *App) Run(ctx context.Context) error {
 
 // handleCommand обрабатывает полученную команду от master.
 func (a *App) handleCommand(cmd transport.Command) {
+	direction := "вниз"
+	if cmd.DirectionUp {
+		direction = "вверх"
+	}
+	log.Printf("[slave/handler] получена команда: %s, выполняю...", direction)
+
 	if cmd.DirectionUp {
 		if err := a.servo.MoveUp(); err != nil {
-			log.Printf("[slave] ошибка движения вверх: %v", err)
+			log.Printf("[slave/handler] ошибка движения вверх: %v", err)
+			return
 		}
 	} else {
 		if err := a.servo.MoveDown(); err != nil {
-			log.Printf("[slave] ошибка движения вниз: %v", err)
+			log.Printf("[slave/handler] ошибка движения вниз: %v", err)
+			return
 		}
 	}
+
+	log.Printf("[slave/handler] команда %s выполнена", direction)
 }

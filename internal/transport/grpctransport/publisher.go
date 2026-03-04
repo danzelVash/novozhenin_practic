@@ -35,9 +35,9 @@ func NewPublisher(addr string) (*Publisher, error) {
 	}
 
 	go func() {
-		log.Printf("[grpc] сервер запущен на %s", addr)
+		log.Printf("[master/transport] сервер запущен на %s", addr)
 		if err := p.server.Serve(lis); err != nil {
-			log.Printf("[grpc] сервер: %v", err)
+			log.Printf("[master/transport] сервер: %v", err)
 		}
 	}()
 
@@ -57,7 +57,7 @@ func (p *Publisher) Stop() {
 // CommandStream — реализация bidirectional gRPC stream.
 // Slave подключается, master отправляет команды из канала, slave подтверждает.
 func (p *Publisher) CommandStream(stream pb.ServoControl_CommandStreamServer) error {
-	log.Println("[grpc] slave подключился")
+	log.Println("[master/transport] slave подключился")
 
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
@@ -68,10 +68,10 @@ func (p *Publisher) CommandStream(stream pb.ServoControl_CommandStreamServer) er
 		for {
 			msg, err := stream.Recv()
 			if err != nil {
-				log.Printf("[grpc] slave отключился: %v", err)
+				log.Printf("[master/transport] slave отключился: %v", err)
 				return
 			}
-			log.Printf("[grpc] подтверждение: %v", msg.GetAcknowledged())
+			log.Printf("[master/transport] подтверждение: %v", msg.GetAcknowledged())
 		}
 	}()
 
@@ -83,7 +83,7 @@ func (p *Publisher) CommandStream(stream pb.ServoControl_CommandStreamServer) er
 			if cmd.DirectionUp {
 				direction = "вверх"
 			}
-			log.Printf("[grpc] отправка команды: %s", direction)
+			log.Printf("[master/transport] отправка команды: %s", direction)
 
 			if err := stream.Send(&pb.MasterMessage{
 				DirectionUp: cmd.DirectionUp,
@@ -91,7 +91,7 @@ func (p *Publisher) CommandStream(stream pb.ServoControl_CommandStreamServer) er
 				return err
 			}
 		case <-ctx.Done():
-			log.Println("[grpc] stream завершён")
+			log.Println("[master/transport] stream завершён")
 			return ctx.Err()
 		}
 	}

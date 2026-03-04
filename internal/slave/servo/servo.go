@@ -32,7 +32,7 @@ func (s *Servo) Init() error {
 	// Экспорт PWM-канала
 	exportPath := fmt.Sprintf("/sys/class/pwm/pwmchip%s/export", pwmChip)
 	if err := os.WriteFile(exportPath, []byte(pwmChannel), 0644); err != nil {
-		log.Printf("[servo] export: %v (возможно уже экспортирован)", err)
+		log.Printf("[slave/servo] export: %v (возможно уже экспортирован)", err)
 	}
 
 	time.Sleep(100 * time.Millisecond)
@@ -52,19 +52,19 @@ func (s *Servo) Init() error {
 		return fmt.Errorf("включение PWM: %w", err)
 	}
 
-	log.Println("[servo] инициализирован (GPIO18, PWM0)")
+	log.Println("[slave/servo] инициализирован (GPIO18, PWM0)")
 	return nil
 }
 
 // MoveUp устанавливает серво в позицию 90° (вверх).
 func (s *Servo) MoveUp() error {
-	log.Println("[servo] движение ВВЕРХ (90°)")
+	log.Println("[slave/servo] движение ВВЕРХ (90°)")
 	return s.write("duty_cycle", fmt.Sprintf("%d", dutyMaxNs))
 }
 
 // MoveDown устанавливает серво в позицию 0° (вниз).
 func (s *Servo) MoveDown() error {
-	log.Println("[servo] движение ВНИЗ (0°)")
+	log.Println("[slave/servo] движение ВНИЗ (0°)")
 	return s.write("duty_cycle", fmt.Sprintf("%d", dutyMinNs))
 }
 

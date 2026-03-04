@@ -60,11 +60,11 @@ func (r *Recorder) Start(ctx context.Context) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("start arecord: %w", err)
 	}
 
-	log.Printf("[recorder] запись запущена: device=%s rate=%d", r.device, r.sampleRate)
+	log.Printf("[master/recorder] запись запущена: device=%s rate=%d", r.device, r.sampleRate)
 
 	go func() {
 		if err := r.cmd.Wait(); err != nil && ctx.Err() == nil {
-			log.Printf("[recorder] arecord завершился: %v", err)
+			log.Printf("[master/recorder] arecord завершился: %v", err)
 		}
 		r.mu.Lock()
 		r.cmd = nil
@@ -82,6 +82,6 @@ func (r *Recorder) Stop() {
 	if r.cancel != nil {
 		r.cancel()
 		r.cancel = nil
-		log.Println("[recorder] запись остановлена")
+		log.Println("[master/recorder] запись остановлена")
 	}
 }

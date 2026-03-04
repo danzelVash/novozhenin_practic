@@ -40,7 +40,7 @@ func (s *Subscriber) Listen(ctx context.Context, handler func(transport.Command)
 		return fmt.Errorf("открытие stream: %w", err)
 	}
 
-	log.Println("[grpc] подключён к master")
+	log.Println("[slave/transport] подключён к master")
 
 	for {
 		msg, err := stream.Recv()
@@ -54,12 +54,13 @@ func (s *Subscriber) Listen(ctx context.Context, handler func(transport.Command)
 		if cmd.DirectionUp {
 			direction = "вверх"
 		}
-		log.Printf("[grpc] получена команда: %s", direction)
+		log.Printf("[slave/transport] получена команда: %s", direction)
 
 		handler(cmd)
 
 		if err := stream.Send(&pb.SlaveMessage{Acknowledged: true}); err != nil {
 			return fmt.Errorf("отправка подтверждения: %w", err)
 		}
+		log.Printf("[slave/transport] подтверждение отправлено master: %s", direction)
 	}
 }
