@@ -3,77 +3,63 @@ package servo
 import (
 	"fmt"
 	"log"
-	"os"
-	"time"
+	"os/exec"
 )
 
-const (
-	pwmChip    = "0"
-	pwmChannel = "0"
-	periodNs   = 20000000 // 20мс (50 Гц)
-	dutyMinNs  = 500000   // ~0° (0.5мс)
-	dutyMaxNs  = 1500000  // ~90° (1.5мс)
-)
+const gpioPin = 18
 
-// Servo — управление сервоприводом через sysfs PWM.
+// Servo — управление сервоприводом через gpiozero (software PWM).
 type Servo struct {
-	basePath string
+	pin int
 }
 
 // New создаёт контроллер сервопривода.
 func New() *Servo {
-	return &Servo{
-		basePath: fmt.Sprintf("/sys/class/pwm/pwmchip%s/pwm%s", pwmChip, pwmChannel),
-	}
+	return &Servo{pin: gpioPin}
 }
 
-// Init инициализирует PWM-канал.
+// Init проверяет доступность python3 и gpiozero.
 func (s *Servo) Init() error {
-	// Экспорт PWM-канала
-	exportPath := fmt.Sprintf("/sys/class/pwm/pwmchip%s/export", pwmChip)
-	if err := os.WriteFile(exportPath, []byte(pwmChannel), 0644); err != nil {
-		log.Printf("[slave/servo] export: %v (возможно уже экспортирован)", err)
+	out, err := exec.Command("python3", "-c", "from gpiozero import Servo; print('ok')").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("gpiozero недоступен: %s: %w", string(out), err)
 	}
-
-	time.Sleep(100 * time.Millisecond)
-
-	// Установка периода
-	if err := s.write("period", fmt.Sprintf("%d", periodNs)); err != nil {
-		return fmt.Errorf("установка периода: %w", err)
-	}
-
-	// Начальная позиция — вниз (0°)
-	if err := s.write("duty_cycle", fmt.Sprintf("%d", dutyMinNs)); err != nil {
-		return fmt.Errorf("установка duty_cycle: %w", err)
-	}
-
-	// Включение PWM
-	if err := s.write("enable", "1"); err != nil {
-		return fmt.Errorf("включение PWM: %w", err)
-	}
-
-	log.Println("[slave/servo] инициализирован (GPIO18, PWM0)")
+	log.Printf("[slave/servo] инициализирован (GPIO%d, gpiozero)", s.pin)
 	return nil
 }
 
 // MoveUp устанавливает серво в позицию 90° (вверх).
 func (s *Servo) MoveUp() error {
 	log.Println("[slave/servo] движение ВВЕРХ (90°)")
-	return s.write("duty_cycle", fmt.Sprintf("%d", dutyMaxNs))
+	return s.run("max")
 }
 
 // MoveDown устанавливает серво в позицию 0° (вниз).
 func (s *Servo) MoveDown() error {
 	log.Println("[slave/servo] движение ВНИЗ (0°)")
-	return s.write("duty_cycle", fmt.Sprintf("%d", dutyMinNs))
+	return s.run("min")
 }
 
-// Close отключает PWM.
+// Close — ничего не делает, ресурсы освобождаются при завершении python.
 func (s *Servo) Close() error {
-	return s.write("enable", "0")
+	return nil
 }
 
-func (s *Servo) write(file, value string) error {
-	path := fmt.Sprintf("%s/%s", s.basePath, file)
-	return os.WriteFile(path, []byte(value), 0644)
+// run выполняет команду серво через python3 + gpiozero.
+func (s *Servo) run(action string) error {
+	script := fmt.Sprintf(`
+from gpiozero import Servo
+from time import sleep
+s = Servo(%d)
+s.%s()
+sleep(0.5)
+s.close()
+`, s.pin, action)
+
+	out, err := exec.Command("python3", "-c", script).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("servo %s: %s: %w", action, string(out), err)
+	}
+	log.Printf("[slave/servo] команда %s выполнена", action)
+	return nil
 }
