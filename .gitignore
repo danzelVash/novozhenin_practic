@@ -1,0 +1,5 @@
+.idea
+.env
+pgdata
+pkg/configs/config.yml
+k8s/

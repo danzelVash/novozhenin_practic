@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package control;
+
+option go_package = "github.com/novozhenin/practic/pkg/pb";
+
+// ServoControl — сервис управления сервоприводом.
+// Master является gRPC-сервером, slave подключается как клиент.
+service ServoControl {
+  // CommandStream — двунаправленный поток.
+  // Master отправляет команды, slave отправляет подтверждения.
+  rpc CommandStream (stream SlaveMessage) returns (stream MasterMessage) {}
+}
+
+// MasterMessage — команда от master к slave.
+message MasterMessage {
+  bool direction_up = 1; // true = вверх (180°), false = вниз (0°)
+}
+
+// SlaveMessage — ответ от slave к master.
+message SlaveMessage {
+  bool acknowledged = 1; // подтверждение выполнения команды
+}
