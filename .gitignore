@@ -3,3 +3,4 @@
 pgdata
 pkg/configs/config.yml
 k8s/
+bin
