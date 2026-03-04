@@ -14,7 +14,7 @@ service ServoControl {
 
 // MasterMessage — команда от master к slave.
 message MasterMessage {
-  bool direction_up = 1; // true = вверх (180°), false = вниз (0°)
+  bool direction_up = 1; // true = вверх (90°), false = вниз (0°)
 }
 
 // SlaveMessage — ответ от slave к master.

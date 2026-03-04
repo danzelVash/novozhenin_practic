@@ -9,11 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/novozhenin/practic/internal/slave/client"
 	"github.com/novozhenin/practic/internal/slave/servo"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/novozhenin/practic/internal/transport"
+	"github.com/novozhenin/practic/internal/transport/grpctransport"
 )
 
 // App — главное приложение slave-сервиса.
@@ -48,6 +46,9 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	defer a.servo.Close()
 
+	// Транспорт (gRPC; в будущем — websocket, MQTT)
+	sub := grpctransport.NewSubscriber(a.cfg.MasterAddr)
+
 	// Цикл подключения к master с переподключением
 	for {
 		select {
@@ -56,7 +57,7 @@ func (a *App) Run(ctx context.Context) error {
 		default:
 		}
 
-		if err := a.connectAndListen(ctx); err != nil {
+		if err := sub.Listen(ctx, a.handleCommand); err != nil {
 			log.Printf("[slave] соединение потеряно: %v", err)
 			log.Println("[slave] переподключение через 3 секунды...")
 			time.Sleep(3 * time.Second)
@@ -64,26 +65,15 @@ func (a *App) Run(ctx context.Context) error {
 	}
 }
 
-// connectAndListen подключается к master и слушает команды.
-func (a *App) connectAndListen(ctx context.Context) error {
-	conn, err := grpc.NewClient(a.cfg.MasterAddr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return fmt.Errorf("подключение к master: %w", err)
-	}
-	defer conn.Close()
-
-	c := client.New(conn, func(directionUp bool) {
-		if directionUp {
-			if err := a.servo.MoveUp(); err != nil {
-				log.Printf("[slave] ошибка движения вверх: %v", err)
-			}
-		} else {
-			if err := a.servo.MoveDown(); err != nil {
-				log.Printf("[slave] ошибка движения вниз: %v", err)
-			}
+// handleCommand обрабатывает полученную команду от master.
+func (a *App) handleCommand(cmd transport.Command) {
+	if cmd.DirectionUp {
+		if err := a.servo.MoveUp(); err != nil {
+			log.Printf("[slave] ошибка движения вверх: %v", err)
 		}
-	})
-
-	return c.Run(ctx)
+	} else {
+		if err := a.servo.MoveDown(); err != nil {
+			log.Printf("[slave] ошибка движения вниз: %v", err)
+		}
+	}
 }

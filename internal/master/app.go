@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,9 +11,9 @@ import (
 
 	"github.com/novozhenin/practic/internal/master/neuro"
 	"github.com/novozhenin/practic/internal/master/recorder"
-	"github.com/novozhenin/practic/internal/master/server"
 	"github.com/novozhenin/practic/internal/master/vad"
-	pb "github.com/novozhenin/practic/pkg/pb"
+	"github.com/novozhenin/practic/internal/transport"
+	"github.com/novozhenin/practic/internal/transport/grpctransport"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -22,11 +21,11 @@ import (
 
 // App — главное приложение master-сервиса.
 type App struct {
-	cfg      Config
-	recorder *recorder.Recorder
-	vad      *vad.VAD
-	neuro    *neuro.Gateway
-	server   *server.Server
+	cfg       Config
+	recorder  *recorder.Recorder
+	vad       *vad.VAD
+	neuro     *neuro.Gateway
+	publisher transport.Publisher
 }
 
 // New создаёт приложение master.
@@ -63,24 +62,15 @@ func (a *App) Run(ctx context.Context) error {
 	defer neuroConn.Close()
 	a.neuro = neuro.NewGateway(neuroConn)
 
-	// Запуск gRPC-сервера для slave
-	a.server = server.New()
-	grpcServer := grpc.NewServer()
-	pb.RegisterServoControlServer(grpcServer, a.server)
-
-	lis, err := net.Listen("tcp", a.cfg.GRPCPort)
+	// Запуск транспорта (gRPC; в будущем — websocket, MQTT)
+	pub, err := grpctransport.NewPublisher(a.cfg.GRPCPort)
 	if err != nil {
-		return fmt.Errorf("listen: %w", err)
+		return fmt.Errorf("запуск транспорта: %w", err)
 	}
-	go func() {
-		log.Printf("[master] gRPC-сервер запущен на %s", a.cfg.GRPCPort)
-		if err := grpcServer.Serve(lis); err != nil {
-			log.Printf("[master] gRPC-сервер: %v", err)
-		}
-	}()
-	defer grpcServer.GracefulStop()
+	defer pub.Stop()
+	a.publisher = pub
 
-	// Запуск конвейера: запись → VAD → нейро → slave
+	// Запуск конвейера: запись → VAD → нейро → транспорт
 	return a.runPipeline(ctx)
 }
 
@@ -115,9 +105,9 @@ func (a *App) runPipeline(ctx context.Context) error {
 
 			switch command {
 			case "вверх":
-				a.server.SendCommand(true)
+				a.publisher.Publish(transport.Command{DirectionUp: true})
 			case "вниз":
-				a.server.SendCommand(false)
+				a.publisher.Publish(transport.Command{DirectionUp: false})
 			default:
 				log.Printf("[master] неизвестная команда: %s", command)
 			}

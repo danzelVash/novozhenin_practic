@@ -12,7 +12,7 @@ const (
 	pwmChannel = "0"
 	periodNs   = 20000000 // 20мс (50 Гц)
 	dutyMinNs  = 500000   // ~0° (0.5мс)
-	dutyMaxNs  = 2500000  // ~180° (2.5мс)
+	dutyMaxNs  = 1500000  // ~90° (1.5мс)
 )
 
 // Servo — управление сервоприводом через sysfs PWM.
@@ -56,9 +56,9 @@ func (s *Servo) Init() error {
 	return nil
 }
 
-// MoveUp устанавливает серво в позицию 180° (вверх).
+// MoveUp устанавливает серво в позицию 90° (вверх).
 func (s *Servo) MoveUp() error {
-	log.Println("[servo] движение ВВЕРХ (180°)")
+	log.Println("[servo] движение ВВЕРХ (90°)")
 	return s.write("duty_cycle", fmt.Sprintf("%d", dutyMaxNs))
 }
 
