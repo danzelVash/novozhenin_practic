@@ -29,7 +29,7 @@ func (g *Gateway) Recognize(ctx context.Context, audio []byte) (string, error) {
 		Chunk: audio,
 		Commands: []*pb.GetAudioRequest_Command{
 			{Name: "вверх"},
-			{Name: "вниз"},
+			{Name: "ниже"},
 			{Name: ""},
 		},
 	})
