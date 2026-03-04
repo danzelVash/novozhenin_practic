@@ -12,6 +12,8 @@ import (
 	"github.com/novozhenin/practic/internal/slave/servo"
 	"github.com/novozhenin/practic/internal/transport"
 	"github.com/novozhenin/practic/internal/transport/grpctransport"
+	"github.com/novozhenin/practic/internal/transport/mqtttransport"
+	"github.com/novozhenin/practic/internal/transport/wstransport"
 )
 
 // App — главное приложение slave-сервиса.
@@ -46,8 +48,19 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	defer a.servo.Close()
 
-	// Транспорт (gRPC; в будущем — websocket, MQTT)
-	sub := grpctransport.NewSubscriber(a.cfg.MasterAddr)
+	// Транспорт
+	var sub transport.Subscriber
+
+	switch a.cfg.Transport {
+	case "grpc":
+		sub = grpctransport.NewSubscriber(a.cfg.MasterAddr)
+	case "websocket":
+		sub = wstransport.NewSubscriber(a.cfg.MasterWSURL)
+	case "mqtt":
+		sub = mqtttransport.NewSubscriber(a.cfg.MQTTBroker)
+	default:
+		return fmt.Errorf("неизвестный транспорт: %s", a.cfg.Transport)
+	}
 
 	// Цикл подключения к master с переподключением
 	for {

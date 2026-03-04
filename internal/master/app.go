@@ -14,6 +14,8 @@ import (
 	"github.com/novozhenin/practic/internal/master/vad"
 	"github.com/novozhenin/practic/internal/transport"
 	"github.com/novozhenin/practic/internal/transport/grpctransport"
+	"github.com/novozhenin/practic/internal/transport/mqtttransport"
+	"github.com/novozhenin/practic/internal/transport/wstransport"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -62,12 +64,33 @@ func (a *App) Run(ctx context.Context) error {
 	defer neuroConn.Close()
 	a.neuro = neuro.NewGateway(neuroConn)
 
-	// Запуск транспорта (gRPC; в будущем — websocket, MQTT)
-	pub, err := grpctransport.NewPublisher(a.cfg.GRPCPort)
-	if err != nil {
-		return fmt.Errorf("запуск транспорта: %w", err)
+	// Запуск транспорта
+	var pub transport.Publisher
+	var stopTransport func()
+
+	switch a.cfg.Transport {
+	case "grpc":
+		p, err := grpctransport.NewPublisher(a.cfg.GRPCPort)
+		if err != nil {
+			return fmt.Errorf("запуск транспорта: %w", err)
+		}
+		pub, stopTransport = p, p.Stop
+	case "websocket":
+		p, err := wstransport.NewPublisher(a.cfg.WSPort)
+		if err != nil {
+			return fmt.Errorf("запуск транспорта: %w", err)
+		}
+		pub, stopTransport = p, p.Stop
+	case "mqtt":
+		p, err := mqtttransport.NewPublisher(a.cfg.MQTTBroker)
+		if err != nil {
+			return fmt.Errorf("запуск транспорта: %w", err)
+		}
+		pub, stopTransport = p, p.Stop
+	default:
+		return fmt.Errorf("неизвестный транспорт: %s", a.cfg.Transport)
 	}
-	defer pub.Stop()
+	defer stopTransport()
 	a.publisher = pub
 
 	// Запуск конвейера: запись → VAD → нейро → транспорт

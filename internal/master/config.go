@@ -10,6 +10,9 @@ type Config struct {
 	SilenceDur   float64 // Длительность тишины для завершения фразы (сек)
 	NeuroAddr    string  // Адрес нейросервиса
 	GRPCPort     string  // Порт gRPC-сервера для slave
+	Transport    string  // Транспорт: grpc / websocket / mqtt
+	WSPort       string  // Порт WebSocket-сервера
+	MQTTBroker   string  // Адрес MQTT-брокера
 }
 
 // LoadConfig загружает конфигурацию из флагов командной строки.
@@ -21,6 +24,9 @@ func LoadConfig() Config {
 	flag.Float64Var(&cfg.SilenceDur, "silence-dur", 1.5, "Silence duration to end phrase (seconds)")
 	flag.StringVar(&cfg.NeuroAddr, "neuro-addr", "192.168.50.96:8000", "Neural network service address")
 	flag.StringVar(&cfg.GRPCPort, "grpc-port", ":50051", "gRPC server port for slave")
+	flag.StringVar(&cfg.Transport, "transport", "grpc", "Transport: grpc / websocket / mqtt")
+	flag.StringVar(&cfg.WSPort, "ws-port", ":8080", "WebSocket server port")
+	flag.StringVar(&cfg.MQTTBroker, "mqtt-broker", "tcp://localhost:1883", "MQTT broker address")
 	flag.Parse()
 	return cfg
 }
