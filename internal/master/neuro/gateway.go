@@ -30,6 +30,7 @@ func (g *Gateway) Recognize(ctx context.Context, audio []byte) (string, error) {
 		Commands: []*pb.GetAudioRequest_Command{
 			{Name: "вверх"},
 			{Name: "вниз"},
+			{Name: ""},
 		},
 	})
 	if err != nil {
