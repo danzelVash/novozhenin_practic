@@ -19,7 +19,7 @@ func LoadConfig() Config {
 	flag.IntVar(&cfg.AudioRate, "audio-rate", 16000, "Audio sample rate in Hz")
 	flag.Float64Var(&cfg.VADThreshold, "vad-threshold", 0.02, "VAD RMS threshold (0-1)")
 	flag.Float64Var(&cfg.SilenceDur, "silence-dur", 1.5, "Silence duration to end phrase (seconds)")
-	flag.StringVar(&cfg.NeuroAddr, "neuro-addr", "51.250.93.99:8000", "Neural network service address")
+	flag.StringVar(&cfg.NeuroAddr, "neuro-addr", "192.168.50.96:8000", "Neural network service address")
 	flag.StringVar(&cfg.GRPCPort, "grpc-port", ":50051", "gRPC server port for slave")
 	flag.Parse()
 	return cfg
