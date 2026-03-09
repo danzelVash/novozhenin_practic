@@ -10,6 +10,7 @@ import (
 
 type SlaveConfig struct {
 	ListenAddr string
+	OnCommand  func(command string) error
 }
 
 func RunSlave(ctx context.Context, cfg SlaveConfig) error {
@@ -68,6 +69,13 @@ func RunSlave(ctx context.Context, cfg SlaveConfig) error {
 		// Виртуальное состояние исполняет команду без зависимости от GPIO.
 		virtualState = strings.EqualFold(packet.Command, CommandUp)
 		log.Printf("[slave/cable] virtual_state=%t", virtualState)
+
+		if cfg.OnCommand != nil {
+			if err := cfg.OnCommand(packet.Command); err != nil {
+				log.Printf("[slave/cable] command execution error: %v", err)
+				continue
+			}
+		}
 
 		if _, err := conn.WriteToUDP([]byte(AckMessage), remoteAddr); err != nil {
 			log.Printf("[slave/cable] ack send error: %v", err)

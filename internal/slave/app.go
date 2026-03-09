@@ -43,8 +43,15 @@ func (a *App) Run(ctx context.Context) error {
 	}()
 
 	if a.cfg.Connect == "cable" {
+		a.servo = servo.New()
+		if err := a.servo.Init(); err != nil {
+			return fmt.Errorf("инициализация серво: %w", err)
+		}
+		defer a.servo.Close()
+
 		return cable.RunSlave(ctx, cable.SlaveConfig{
 			ListenAddr: a.cfg.CableListen,
+			OnCommand:  a.handleCableCommand,
 		})
 	}
 
@@ -110,4 +117,17 @@ func (a *App) handleCommand(cmd transport.Command) {
 	}
 
 	log.Printf("[slave/handler] команда %s выполнена", direction)
+}
+
+func (a *App) handleCableCommand(command string) error {
+	switch command {
+	case cable.CommandUp:
+		log.Println("[slave/cable-handler] выполняю команду: вверх")
+		return a.servo.MoveUp()
+	case cable.CommandDown:
+		log.Println("[slave/cable-handler] выполняю команду: вниз")
+		return a.servo.MoveDown()
+	default:
+		return fmt.Errorf("неизвестная cable-команда: %s", command)
+	}
 }
