@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/novozhenin/practic/internal/cable"
 	"github.com/novozhenin/practic/internal/slave/servo"
 	"github.com/novozhenin/practic/internal/transport"
 	"github.com/novozhenin/practic/internal/transport/grpctransport"
@@ -41,6 +42,16 @@ func (a *App) Run(ctx context.Context) error {
 		cancel()
 	}()
 
+	if a.cfg.Connect == "cable" {
+		return cable.RunSlave(ctx, cable.SlaveConfig{
+			ListenAddr: a.cfg.CableListen,
+		})
+	}
+
+	return a.runLegacy(ctx)
+}
+
+func (a *App) runLegacy(ctx context.Context) error {
 	// Инициализация сервопривода
 	a.servo = servo.New()
 	if err := a.servo.Init(); err != nil {

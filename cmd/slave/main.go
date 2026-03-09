@@ -10,7 +10,8 @@ import (
 func main() {
 	cfg := slave.LoadConfig()
 
-	log.Printf("[slave] transport=%s master=%s", cfg.Transport, cfg.MasterAddr)
+	log.Printf("[slave] connect=%s transport=%s master=%s cable_listen=%s",
+		cfg.Connect, cfg.Transport, cfg.MasterAddr, cfg.CableListen)
 
 	app := slave.New(cfg)
 	if err := app.Run(context.Background()); err != nil {

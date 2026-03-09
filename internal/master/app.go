@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/novozhenin/practic/internal/cable"
 	"github.com/novozhenin/practic/internal/master/neuro"
 	"github.com/novozhenin/practic/internal/master/recorder"
 	"github.com/novozhenin/practic/internal/master/vad"
@@ -49,6 +50,16 @@ func (a *App) Run(ctx context.Context) error {
 		cancel()
 	}()
 
+	if a.cfg.Connect == "cable" {
+		return cable.RunMaster(ctx, cable.MasterConfig{
+			SlaveAddr: a.cfg.CableSlave,
+		})
+	}
+
+	return a.runLegacy(ctx)
+}
+
+func (a *App) runLegacy(ctx context.Context) error {
 	// Инициализация компонентов
 	a.recorder = recorder.New(a.cfg.AudioDevice, a.cfg.AudioRate)
 	a.vad = vad.New(a.cfg.VADThreshold,
